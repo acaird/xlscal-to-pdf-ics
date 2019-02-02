@@ -1,3 +1,4 @@
+from __future__ import print_function
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, landscape
@@ -19,10 +20,10 @@ cal.extend(calendar.monthcalendar(2019,2))
 cal[1][4] = str(cal[1][4])+"\nHI!!!!!"
 for w,x in enumerate(cal):
     for v,y in enumerate(cal[w]):
-        print "{},{}".format(w,v)
+        print ("{},{}".format(w,v))
         if cal[w][v] == 0:
             cal[w][v] = ''
-print cal
+print (cal)
 
 
 table = Table(cal, 7*[1.25 *inch], len(cal) * [0.8 * inch])
