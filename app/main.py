@@ -6,7 +6,8 @@ import json
 import xlrd
 from base64 import b64encode
 from dateutil.parser import parse
-from datetime import datetime
+from datetime import datetime, date
+from time import strptime, strftime, mktime
 from io import BytesIO
 from reportlab.lib.units import inch
 from reportlab.lib import colors
@@ -21,6 +22,7 @@ from reportlab.platypus import (
 )
 from reportlab.graphics.shapes import Drawing
 import calendar
+from icalendar import Calendar, Event
 
 app = Flask(__name__)
 
@@ -67,6 +69,10 @@ def upload_file():
             evtdict[evt[0]] = evt[1]
 
         pdfcals = make_pdf_cals(evtdict)
+
+        ics = make_ics(evtdict)
+
+        print(ics.decode("ascii"))
 
         return pdfcals
 
@@ -137,11 +143,12 @@ def make_pdf_cals(events):
             elements.append(PageBreak())
 
     doc.build(elements)
+
     resp = Response(buf.getvalue())
     resp.headers["Content-Disposition"] = "attachment; filename={}".format("cals.pdf")
     resp.headers["Content-Type"] = "application/pdf"
     buf.close()
-    # return buf.getvalue()
+
     return resp
 
 
@@ -158,6 +165,19 @@ def fill_cal(cal, mon, yr, events):
                 cal[row][day] = str(cal[row][day]) + "\n{}".format(events[date])
 
     return cal
+
+
+def make_ics(events):
+    ical = Calendar()
+
+    for m in sorted(events):
+        event = Event()
+        event.add("summary", events[m])
+        event.add("dtstart", m.date())
+
+        ical.add_component(event)
+
+    return ical.to_ical(ical)
 
 
 if __name__ == "__main__":
