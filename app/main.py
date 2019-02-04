@@ -1,13 +1,11 @@
-from flask import Flask, render_template, request, Response
+from flask import Flask, request, Response
 from werkzeug import secure_filename
 import os
 import csv
-import json
 import xlrd
-from base64 import b64encode
+import calendar
 from dateutil.parser import parse
-from datetime import datetime, date
-from time import strptime, strftime, mktime
+from datetime import datetime
 from io import BytesIO
 from reportlab.lib.units import inch
 from reportlab.lib import colors
@@ -20,9 +18,8 @@ from reportlab.platypus import (
     Paragraph,
     PageBreak,
 )
-from reportlab.graphics.shapes import Drawing
-import calendar
 from icalendar import Calendar, Event
+from zipfile import ZipFile
 
 app = Flask(__name__)
 
@@ -31,7 +28,7 @@ app = Flask(__name__)
 def upload():
     page = """<html>
    <body>
-      <form action = "/uploader" method = "POST" 
+      <form action = "/uploader" method = "POST"
          enctype = "multipart/form-data">
          <input type = "file" name = "file" />
          <input type = "submit"/>
@@ -47,7 +44,7 @@ def upload_file():
     if request.method == "POST":
         f = request.files["file"]
         sfname = secure_filename(f.filename)
-        a = f.save(sfname)
+        f.save(sfname)
 
         filename, fileext = os.path.splitext(sfname)
         if fileext not in can_process:
@@ -68,39 +65,48 @@ def upload_file():
         for evt in ret:
             evtdict[evt[0]] = evt[1]
 
+        memory_file = BytesIO()
+        zip_file = ZipFile(memory_file, "w")
+
         pdfcals = make_pdf_cals(evtdict)
+        zip_file.writestr("calendar.pdf", pdfcals)
 
         ics = make_ics(evtdict)
+        zip_file.writestr("calendar.ics", ics.decode("ascii"))
 
-        print(ics.decode("ascii"))
-
-        return pdfcals
+        zip_file.close()
+        resp = Response(memory_file.getvalue())
+        resp.headers["Content-Disposition"] = "attachment; filename={}".format(
+            "cals.zip"
+        )
+        resp.headers["Content-Type"] = "application/zip"
+        return resp
 
 
 def parse_csv(filename):
-    l = []
+    csv_line = []
     with open(filename, "r") as f:
         reader = csv.reader(f)
         for line in reader:
             line[0] = parse(line[0])
-            l.append(line)
+            csv_line.append(line)
 
-    return l
+    return csv_line
 
 
 def parse_xlsx(filename):
     workbook = xlrd.open_workbook(filename)
     sheet = workbook.sheet_by_index(0)
 
-    l = []
+    xls_line = []
 
     for rowx in range(sheet.nrows):
         cols = sheet.row_values(rowx)
         cols[0] = datetime(*xlrd.xldate_as_tuple(cols[0], workbook.datemode))
 
-        l.append(cols)
+        xls_line.append(cols)
 
-    return l
+    return xls_line
 
 
 def make_pdf_cals(events):
@@ -144,12 +150,9 @@ def make_pdf_cals(events):
 
     doc.build(elements)
 
-    resp = Response(buf.getvalue())
-    resp.headers["Content-Disposition"] = "attachment; filename={}".format("cals.pdf")
-    resp.headers["Content-Type"] = "application/pdf"
-    buf.close()
+    pdf = buf.getvalue()
 
-    return resp
+    return pdf
 
 
 def fill_cal(cal, mon, yr, events):
