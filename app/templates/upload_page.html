@@ -1,0 +1,30 @@
+{% extends "bootstrap/base.html" %}
+{% block title %}This is an example page{% endblock %}
+
+{% block navbar %}
+<div class="navbar navbar-fixed-top">
+  <!-- ... -->
+</div>
+{% endblock %}
+
+{% block content %}
+      <h1>Convert a list of Excel Events to PDF Calendars and an ICS
+    File</h1>
+    <p>
+      You should have a Microsoft XLSX file that has a list of dates
+      in Column A and a list of events in Column B.  Click the
+      "Browse" button below and locate that file.  Press the "Create
+      Zip file of PDF and ICS file" button and you will be prompted to
+      open or save a Zip file.  You should save it.  In that Zip file
+      will be a PDF file with a monthly calendar for each month that
+      has an event and an ICS file that can be imported into your
+      calendar program (Microsoft Outlook, MacOS Calendar, etc.)
+    </p>
+    <p>
+      <form action = "/uploader" method = "POST"
+            enctype = "multipart/form-data">
+        <input type = "file" name = "file" />
+        <input type = "submit" value="Create Zip file of PDF and ICS files"/>
+      </form>
+    </p>
+{% endblock %}

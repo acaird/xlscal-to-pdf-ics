@@ -1,4 +1,5 @@
-from flask import Flask, request, Response
+from flask import Flask, request, Response, render_template
+from flask_bootstrap import Bootstrap
 from werkzeug import secure_filename
 import os
 import csv
@@ -22,20 +23,12 @@ from icalendar import Calendar, Event
 from zipfile import ZipFile
 
 app = Flask(__name__)
+Bootstrap(app)
 
 
 @app.route("/")
 def upload():
-    page = """<html>
-   <body>
-      <form action = "/uploader" method = "POST"
-         enctype = "multipart/form-data">
-         <input type = "file" name = "file" />
-         <input type = "submit"/>
-      </form>
-   </body>
-</html>"""
-    return page
+    return render_template("upload_page.html")
 
 
 @app.route("/uploader", methods=["GET", "POST"])
