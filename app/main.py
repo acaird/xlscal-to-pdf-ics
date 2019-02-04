@@ -42,6 +42,11 @@ def upload():
 def upload_file():
     can_process = [".csv", ".xlsx"]
     if request.method == "POST":
+        if not "file" in request.files:
+            return (
+                "Please press your browser's Back "
+                "button and specify a file to upload."
+            )
         f = request.files["file"]
         sfname = secure_filename(f.filename)
         f.save(sfname)
@@ -58,8 +63,12 @@ def upload_file():
 
         if fileext == ".csv":
             ret = parse_csv(sfname)
+            if ret is None:
+                return "The .csv file was badly formatted, check it again try again."
         if fileext == ".xlsx":
             ret = parse_xlsx(sfname)
+            if ret is None:
+                return "The .xlsx file was badly formatted, check it again try again."
 
         evtdict = {}
         for evt in ret:
@@ -86,16 +95,23 @@ def upload_file():
 def parse_csv(filename):
     csv_line = []
     with open(filename, "r") as f:
-        reader = csv.reader(f)
-        for line in reader:
-            line[0] = parse(line[0])
-            csv_line.append(line)
+        try:
+            reader = csv.reader(f)
+            for line in reader:
+                line[0] = parse(line[0])
+                csv_line.append(line)
+        except ValueError:
+            return None
 
     return csv_line
 
 
 def parse_xlsx(filename):
-    workbook = xlrd.open_workbook(filename)
+    try:
+        workbook = xlrd.open_workbook(filename)
+    except xlrd.biffh.XLRDError:
+        return None
+
     sheet = workbook.sheet_by_index(0)
 
     xls_line = []
