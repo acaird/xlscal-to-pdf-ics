@@ -1,0 +1,399 @@
+#+OPTIONS: ':t *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t
+#+OPTIONS: broken-links:nil c:nil creator:nil d:(not "LOGBOOK")
+#+OPTIONS: date:t e:t email:nil f:t inline:t num:t p:nil pri:nil
+#+OPTIONS: prop:nil stat:t tags:t tasks:t tex:t timestamp:t title:t
+#+OPTIONS: toc:t todo:t |:t
+#+TITLE: README: xlscal-to-pdfics
+#+DATE: <2019-02-02 Sat>
+#+AUTHOR: Andy Caird
+#+EMAIL: acaird@gmail.com
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 26.1 (Org mode 9.1.9)
+
+* Purpose
+
+  Take an Excel file that looks like:
+
+  | /        | <       |
+  |----------+---------|
+  | 1/1/2019 | Event 1 |
+  | 1/2/2019 | Event 2 |
+  | 1/3/2019 | Event 3 |
+  |----------+---------|
+
+  as an upload and produce a PDF calendar, one month for page, and an
+  ICS file that can be imported into calendars with that data on them.
+
+* Notes
+
+  - https://hub.docker.com/r/tiangolo/uwsgi-nginx-flask/
+
+  - https://stackoverflow.com/questions/5068591/rendering-a-reportlab-pdf-built-from-simpledoctemplate
+
+    #+BEGIN_EXAMPLE python
+      #!/usr/bin/env python3
+
+      response = HttpResponse(mimetype='application/pdf')
+      response['Content-Disposition'] = 'attachment; filename={}'.format(pdf_name)
+
+      buff = BytesIO()
+      doc = SimpleDocTemplate(buff, pagesize=letter)
+
+      doc.build(elements)
+      response.write(buff.getvalue())
+      buff.close()
+      return response
+    #+END_EXAMPLE
+
+  - Maybe hosting?
+
+    - https://devcenter.heroku.com/articles/container-registry-and-runtime
+
+    - https://collabnix.com/category/docker/docker-for-gcp/
+
+    - https://cloud.google.com/cloud-build/docs/quickstart-docker
+
+    - https://cloudacademy.com/blog/the-4-best-docker-hosting-services/
+
+    - https://aws.amazon.com/fargate/
+    
+      - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_GetStarted.html?nc2=type_a
+      
+    - https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-public-ip-address
+
+      - =brew install az= installs the Azure cli command
+
+      - https://docs.microsoft.com/en-us/cli/azure/network/public-ip?view=azure-cli-latest#az-network-public-ip-create
+
+      - https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough
+
+      - https://docs.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain
+
+      - https://docs.microsoft.com/en-us/azure/aks/tutorial-kubernetes-app-update
+    
+    - https://cloud.google.com/kubernetes-engine/docs/tutorials/configuring-domain-name-static-ip
+
+      - https://console.cloud.google.com/kubernetes
+
+	This didn't work, though, with the error:
+	#+BEGIN_EXAMPLE
+	  ERROR: (gcloud.container.clusters.create) Operation [<Operation clusterConditions: [<StatusCondition code: CodeValueValuesEnum(GCE_STOCKOUT, 1)
+	   message: u'Try a different location, or try again later: Google Compute Engine does not have enough resources available to fulfill request: us-central1-b.'>]
+	   detail: u'Try a different location, or try again later: Google Compute Engine does not have enough resources available to fulfill request: us-central1-b.'
+	   endTime: u'2019-02-07T01:52:24.015219227Z'
+	   name: u'operation-1549504333886-880ea104'
+	   nodepoolConditions: []
+	   operationType: OperationTypeValueValuesEnum(CREATE_CLUSTER, 1)
+	   selfLink: u'https://container.googleapis.com/v1/projects/180749766837/zones/us-central1-b/operations/operation-1549504333886-880ea104'
+	   startTime: u'2019-02-07T01:52:13.886673043Z'
+	   status: StatusValueValuesEnum(DONE, 3)
+	   statusMessage: u'Try a different location, or try again later: Google Compute Engine does not have enough resources available to fulfill request: us-central1-b.'
+	   targetLink: u'https://container.googleapis.com/v1/projects/180749766837/zones/us-central1-b/clusters/xlsx-cal'
+	   zone: u'us-central1-b'>] finished with error: Try a different location, or try again later: Google Compute Engine does not have enough resources available to fulfill request: us-central1-b.
+	#+END_EXAMPLE
+
+	Which is, according to search results, not uncommon.
+
+** Azure
+
+
+   #+BEGIN_SRC sh :exports both :results output
+     az group create --name acaird-xls2cal --location eastus
+   #+END_SRC
+
+   #+BEGIN_SRC sh :exports both :results output
+     az aks create \
+	 --resource-group acaird-xls2cal \
+	 --name xls2cal \
+	 --node-count 1 \
+	 --generate-ssh-keys
+   #+END_SRC
+
+   #+BEGIN_SRC sh :exports both :results output
+   az aks get-credentials --resource-group acaird-xls2cal --name xls2cal
+   #+END_SRC
+
+   #+RESULTS:
+   : Merged "xls2cal" as current context in /Users/acaird/.kube/config
+
+   #+BEGIN_SRC sh :exports both :results output
+   kubectl get nodes -o wide
+   #+END_SRC
+
+   #+RESULTS:
+   : NAME                       STATUS    ROLES     AGE       VERSION   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+   : aks-nodepool1-21317057-0   Ready     agent     4m        v1.9.11   <none>        Ubuntu 16.04.5 LTS   4.15.0-1036-azure   docker://3.0.1
+
+   #+BEGIN_SRC yaml :tangle xls2cal.yaml
+     apiVersion: apps/v1
+     kind: Deployment
+     metadata:
+       name: xls2cal
+     spec:
+       replicas: 1
+       selector:
+	 matchLabels:
+	   app: xls2cal
+       template:
+	 metadata:
+	   labels:
+	     app: xls2cal
+	 spec:
+	   containers:
+	   - name: xls2cal
+	     image: acaird/xls2cal
+	     resources:
+	       requests:
+		 cpu: 100m
+		 memory: 128Mi
+	       limits:
+		 cpu: 250m
+		 memory: 256Mi
+	     ports:
+	     - containerPort: 80
+     ---
+     apiVersion: v1
+     kind: Service
+     metadata:
+       name: xls2cal
+     spec:
+       type: LoadBalancer
+       ports:
+       - port: 80
+       selector:
+	 app: xls2cal
+   #+END_SRC
+
+   #+BEGIN_SRC sh :results output :exports both
+   kubectl config get-contexts
+   #+END_SRC
+
+   #+RESULTS:
+   : CURRENT   NAME                 CLUSTER                      AUTHINFO                                   NAMESPACE
+   :           docker-for-desktop   docker-for-desktop-cluster   docker-for-desktop                         
+   : *         xls2cal              xls2cal                      clusterUser_acaird-xls2cal_xls2cal         
+
+   #+BEGIN_SRC sh :exports both :results output
+   kubectl apply -f xls2cal.yaml
+   #+END_SRC
+
+   #+RESULTS:
+   : deployment.apps "xls2cal" created
+   : service "xls2cal" created
+
+   #+BEGIN_SRC sh :exports both :results output
+   kubectl get service xls2cal
+   #+END_SRC
+
+   #+RESULTS:
+   : NAME      TYPE           CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE
+   : xls2cal   LoadBalancer   10.0.42.132   <pending>     80:31270/TCP   18s
+
+   After a bit...
+   #+BEGIN_SRC sh :exports both :results output
+   kubectl get service xls2cal
+   #+END_SRC
+
+   #+RESULTS:
+   : NAME      TYPE           CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE
+   : xls2cal   LoadBalancer   10.0.42.132   xx.xx.xx.xx   80:31270/TCP   1m
+
+   #+BEGIN_SRC sh :exports both :results output
+   curl -s http://xx.xx.xx.xx/ | html2text
+   #+END_SRC
+
+   #+RESULTS:
+   #+begin_example
+   You should have a Microsoft XLSX file that has a list of dates in Column A and
+   a list of events in Column B. Click the "Browse" button below and locate that
+   file. Press the "Create Zip file of PDF and ICS file" button and you will be
+   prompted to open or save a Zip file. You should save it. In that Zip file will
+   be a PDF file with a monthly calendar for each month that has an event and an
+   ICS file that can be imported into your calendar program (Microsoft Outlook,
+   MacOS Calendar, etc.)
+   [File] [Create Zip file of PDF and ICS files]
+   #+end_example
+
+   #+BEGIN_SRC sh :exports both :results output
+   kubectl get pods,svc -o wide
+   #+END_SRC
+
+   #+RESULTS:
+   : NAME                           READY     STATUS    RESTARTS   AGE       IP           NODE
+   : pod/xls2cal-75c6b755cd-2nkc5   1/1       Running   0          3m        10.244.0.8   aks-nodepool1-21317057-0
+   : NAME                 TYPE           CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE       SELECTOR
+   : service/kubernetes   ClusterIP      10.0.0.1      <none>        443/TCP        45m       <none>
+   : service/xls2cal      LoadBalancer   10.0.42.132   xx.xx.xx.xx   80:31270/TCP   3m        app=xls2cal
+
+   #+BEGIN_SRC sh :exports both :results output
+   kubectl logs xls2cal-75c6b755cd-2nkc5
+   #+END_SRC
+
+   #+RESULTS:
+   #+begin_example
+   Checking for script in /app/prestart.sh
+   Running script /app/prestart.sh
+   Running inside /app/prestart.sh, you could add migrations to this file, e.g.:
+
+   #! /usr/bin/env bash
+
+   # Let the DB start
+   sleep 10;
+   # Run migrations
+   alembic upgrade head
+
+   /usr/lib/python2.7/dist-packages/supervisor/options.py:298: UserWarning: Supervisord is running as root and it is searching for its configuration file in default locations (including its current working directory); you probably want to specify a "-c" argument specifying an absolute path to a configuration file for improved security.
+     'Supervisord is running as root and it is searching '
+   2019-02-10 16:35:52,041 CRIT Supervisor running as root (no user in config file)
+   2019-02-10 16:35:52,041 INFO Included extra file "/etc/supervisor/conf.d/supervisord.conf" during parsing
+   2019-02-10 16:35:52,051 INFO RPC interface 'supervisor' initialized
+   2019-02-10 16:35:52,051 CRIT Server 'unix_http_server' running without any HTTP authentication checking
+   2019-02-10 16:35:52,051 INFO supervisord started with pid 1
+   2019-02-10 16:35:53,053 INFO spawned: 'nginx' with pid 9
+   2019-02-10 16:35:53,055 INFO spawned: 'uwsgi' with pid 10
+   [uWSGI] getting INI configuration from /app/uwsgi.ini
+   [uWSGI] getting INI configuration from /etc/uwsgi/uwsgi.ini
+
+   ;uWSGI instance configuration
+   [uwsgi]
+   cheaper = 2
+   processes = 16
+   ini = /app/uwsgi.ini
+   module = main
+   callable = app
+   ini = /etc/uwsgi/uwsgi.ini
+   socket = /tmp/uwsgi.sock
+   chown-socket = nginx:nginx
+   chmod-socket = 664
+   hook-master-start = unix_signal:15 gracefully_kill_them_all
+   need-app = true
+   die-on-term = true
+   show-config = true
+   ;end of configuration
+
+   ,*** Starting uWSGI 2.0.17.1 (64bit) on [Sun Feb 10 16:35:53 2019] ***
+   compiled with version: 6.3.0 20170516 on 02 February 2019 20:07:18
+   os: Linux-4.15.0-1036-azure #38~16.04.1-Ubuntu SMP Fri Dec 7 03:21:52 UTC 2018
+   nodename: xls2cal-75c6b755cd-2nkc5
+   machine: x86_64
+   clock source: unix
+   ------  [...] ------
+   [pid: 13|app: 0|req: 1/1] 10.244.0.1 () {32 vars in 331 bytes} [Sun Feb 10 16:36:54 2019] GET / => generated 1522 bytes in 17 msecs (HTTP/1.1 200) 2 headers in 81 bytes (1 switches on core 0)
+   10.244.0.1 - - [10/Feb/2019:16:36:54 +0000] "GET / HTTP/1.1" 200 1522 "-" "curl/7.54.0" "-"
+   10.244.0.1 - - [10/Feb/2019:16:39:03 +0000] "GET / HTTP/1.1" 200 1522 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:64.0) Gecko/20100101 Firefox/64.0" "-"
+   [pid: 12|app: 0|req: 1/2] 10.244.0.1 () {40 vars in 601 bytes} [Sun Feb 10 16:39:03 2019] GET / => generated 1522 bytes in 18 msecs (HTTP/1.1 200) 2 headers in 81 bytes (1 switches on core 0)
+   [pid: 13|app: 0|req: 2/3] 10.244.0.1 () {38 vars in 588 bytes} [Sun Feb 10 16:39:03 2019] GET /favicon.ico => generated 233 bytes in 8 msecs (HTTP/1.1 404) 2 headers in 72 bytes (1 switches on core 0)
+   10.244.0.1 - - [10/Feb/2019:16:39:03 +0000] "GET /favicon.ico HTTP/1.1" 404 233 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:64.0) Gecko/20100101 Firefox/64.0" "-"
+   [pid: 13|app: 0|req: 3/4] 10.244.0.1 () {46 vars in 875 bytes} [Sun Feb 10 16:39:18 2019] POST /uploader => generated 6008 bytes in 40 msecs (HTTP/1.1 200) 3 headers in 124 bytes (1 switches on core 0)
+   10.244.0.1 - - [10/Feb/2019:16:39:18 +0000] "POST /uploader HTTP/1.1" 200 6008 "http://xx.xx.xx.xx/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:64.0) Gecko/20100101 Firefox/64.0" "-"
+   10.244.0.1 - - [10/Feb/2019:16:39:58 +0000] "GET / HTTP/1.1" 200 1522 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/601.7.7 (KHTML, like Gecko) Version/9.1.2 Safari/601.7.7" "-"
+   [pid: 13|app: 0|req: 4/5] 10.244.0.1 () {32 vars in 446 bytes} [Sun Feb 10 16:39:58 2019] GET / => generated 1522 bytes in 0 msecs (HTTP/1.1 200) 2 headers in 81 bytes (1 switches on core 0)
+   #+end_example
+
+** DNS
+
+   At https://dcc.godaddy.com/manage/acaird.com/dns click "Add",
+   select "A" as the type (an [[https://support.dnsimple.com/articles/a-record/][A record]]) hostname, =xxxxxx=, and the
+   IP address above, =xx.xx.xx.xx=.
+
+   #+BEGIN_SRC sh :exports both :results output
+   dig xxxxxx.acaird.com
+   #+END_SRC
+
+   #+RESULTS:
+   #+begin_example
+
+   ; <<>> DiG 9.10.6 <<>> xxxxxx.acaird.com
+   ;; global options: +cmd
+   ;; Got answer:
+   ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 64238
+   ;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+
+   ;; OPT PSEUDOSECTION:
+   ; EDNS: version: 0, flags:; udp: 4096
+   ;; QUESTION SECTION:
+   ;xxxxxxxx.acaird.com.		IN	A
+
+   ;; ANSWER SECTION:
+   xxxxxxx.acaird.com.	3562	IN	A	xx.xx.xx.xx
+
+   ;; Query time: 77 msec
+   ;; SERVER: 192.168.117.1#53(192.168.117.1)
+   ;; WHEN: Sun Feb 10 12:33:25 EST 2019
+   ;; MSG SIZE  rcvd: 64
+
+   #+end_example
+
+   and now the =curl= command can use the hostname and not the IP
+   address:
+   #+BEGIN_SRC sh :exports both :results output
+   curl -s http://xxxxxx.acaird.com/ | html2text
+   #+END_SRC
+
+   #+RESULTS:
+   #+begin_example
+   You should have a Microsoft XLSX file that has a list of dates in Column A and
+   a list of events in Column B. Click the "Browse" button below and locate that
+   file. Press the "Create Zip file of PDF and ICS file" button and you will be
+   prompted to open or save a Zip file. You should save it. In that Zip file will
+   be a PDF file with a monthly calendar for each month that has an event and an
+   ICS file that can be imported into your calendar program (Microsoft Outlook,
+   MacOS Calendar, etc.)
+   [File] [Create Zip file of PDF and ICS files]
+   #+end_example
+
+   #+END_SRC
+
+** Security
+
+   I started the container at 16:36 on 10 Feb 2019, and by 18:34 it
+   was being nmap'd:
+   #+BEGIN_SRC sh :results output :exports both
+   kubectl logs --tail=15 xls2cal-75c6b755cd-2nkc5
+   #+END_SRC
+
+   #+RESULTS:
+   #+begin_example
+   10.244.0.1 - - [10/Feb/2019:18:34:32 +0000] "\x16\x03\x01\x00\xF5\x01\x00\x00\xF1\x03\x03~\x92\xDEzo\xAC\x85\xDEs\x9DL*\x22\x8D\x84\xA5\x0C\x15+\xE0\x14\x89\xBA\xD7\xA4\x9BY\xE5S\xD9~\xA3\x00\x00\x92\x00\x05\x00\x04\x00\x02\x00\x01\x00\x15\x00\x16\x003\x009\x00:\x00\x1A\x00\x18\x005\x00\x09\x00" 400 157 "-" "-" "-"
+   10.244.0.1 - - [10/Feb/2019:18:34:32 +0000] "\x16\x03\x01\x00\xF5\x01\x00\x00\xF1\x03\x03NDyj\xC1\xE4+\xCC\xB48\xEA\xAB%\x16\x82\xDF:\xCA7\x1D\xD3\xFF:\x96\x9C\x07 \xF5\x85<.a\x00\x00\x92\x00\x05\x00\x04\x00\x02\x00\x01\x00\x15\x00\x16\x003\x009\x00:\x00\x1A\x00\x18\x005\x00\x09\x00" 400 157 "-" "-" "-"
+   10.244.0.1 - - [10/Feb/2019:18:34:32 +0000] "\x16\x03\x01\x00\xF5\x01\x00\x00\xF1\x03\x03\x11\x1Ez\x99\xD1L\xCF\xC6\xD8\xF4\xB9\xDF[\x0C\xA9]k)M4:\xF7 \x8CDW\xD0\x93\xE7D\x1Fs\x00\x00\x92\x00\x05\x00\x04\x00\x02\x00\x01\x00\x15\x00\x16\x003\x009\x00:\x00\x1A\x00\x18\x005\x00\x09\x00" 400 157 "-" "-" "-"
+   10.244.0.1 - - [10/Feb/2019:18:34:33 +0000] "\x16\x03\x01\x00\xF5\x01\x00\x00\xF1\x03\x03V\x0F\xBA\x1A\xFE\xFA\xAC\xF9\x85|\xFC\x80\x22\xEE\xC2~i\xC7j\x16|\x10\xB9\xAFn\xFC\x85(V\xD0\xA6\xC4\x00\x00\x92\x00\x05\x00\x04\x00\x02\x00\x01\x00\x15\x00\x16\x003\x009\x00:\x00\x1A\x00\x18\x005\x00\x09\x00" 400 157 "-" "-" "-"
+   10.244.0.1 - - [10/Feb/2019:18:34:33 +0000] "\x16\x03\x01\x00\xF5\x01\x00\x00\xF1\x03\x03}Ur\xBB\x7F<0\xFDC_\x9F\x05\xE4\xF2HX\x1F\x93e\xFB\xF6Z\xEC\xA1\xB1>\xC9v};#\xA0\x00\x00\x92\x00\x05\x00\x04\x00\x02\x00\x01\x00\x15\x00\x16\x003\x009\x00:\x00\x1A\x00\x18\x005\x00\x09\x00" 400 157 "-" "-" "-"
+   10.244.0.1 - - [10/Feb/2019:18:34:33 +0000] "\x16\x03\x01\x00\xF5\x01\x00\x00\xF1\x03\x03\xA0*\x16\xC8\xC2[\x16\xD3\xCB\xE7\xA8\x15\x1C\xC0\x87H\xE4\xE8d\x8AkFD\xF71\x9A:G\x00\xFC\xB05\x00\x00\x92\x00\x05\x00\x04\x00\x02\x00\x01\x00\x15\x00\x16\x003\x009\x00:\x00\x1A\x00\x18\x005\x00\x09\x00" 400 157 "-" "-" "-"
+   10.244.0.1 - - [10/Feb/2019:18:34:33 +0000] "\x16\x03\x01\x00\xF5\x01\x00\x00\xF1\x03\x03{:\xB3\xFC6\x9B\x0Cn\xCARE\xD5\x0E\xA1\x12t\xAF&T\xEB\x1D\x83\x06\x1B3m\xDD\xE8\xF7\xF4\x8A\x11\x00\x00\x92\x00\x05\x00\x04\x00\x02\x00\x01\x00\x15\x00\x16\x003\x009\x00:\x00\x1A\x00\x18\x005\x00\x09\x00" 400 157 "-" "-" "-"
+   [pid: 13|app: 0|req: 27/44] 10.244.0.1 () {40 vars in 619 bytes} [Sun Feb 10 19:16:45 2019] GET /admin => generated 233 bytes in 0 msecs (HTTP/1.1 404) 2 headers in 72 bytes (1 switches on core 0)
+   10.244.0.1 - - [10/Feb/2019:19:16:45 +0000] "GET /admin HTTP/1.1" 404 233 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:64.0) Gecko/20100101 Firefox/64.0" "-"
+   [pid: 12|app: 0|req: 18/45] 10.244.0.1 () {38 vars in 596 bytes} [Sun Feb 10 19:16:45 2019] GET /favicon.ico => generated 233 bytes in 0 msecs (HTTP/1.1 404) 2 headers in 72 bytes (1 switches on core 0)
+   10.244.0.1 - - [10/Feb/2019:19:16:45 +0000] "GET /favicon.ico HTTP/1.1" 404 233 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:64.0) Gecko/20100101 Firefox/64.0" "-"
+   [pid: 13|app: 0|req: 28/46] 10.244.0.1 () {40 vars in 609 bytes} [Sun Feb 10 19:16:55 2019] GET / => generated 1522 bytes in 0 msecs (HTTP/1.1 200) 2 headers in 81 bytes (1 switches on core 0)
+   10.244.0.1 - - [10/Feb/2019:19:16:55 +0000] "GET / HTTP/1.1" 200 1522 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:64.0) Gecko/20100101 Firefox/64.0" "-"
+   [pid: 13|app: 0|req: 29/47] 10.244.0.1 () {38 vars in 596 bytes} [Sun Feb 10 19:16:55 2019] GET /favicon.ico => generated 233 bytes in 0 msecs (HTTP/1.1 404) 2 headers in 72 bytes (1 switches on core 0)
+   10.244.0.1 - - [10/Feb/2019:19:16:55 +0000] "GET /favicon.ico HTTP/1.1" 404 233 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:64.0) Gecko/20100101 Firefox/64.0" "-"
+   #+end_example
+   
+* Project Plan
+
+  1. [X] Get Docker-ized Flask app that accepts the upload of an Excel
+     file into memory, turns it into a Python data object, and prints
+     an HTML page
+
+  2. [X] Produce a PDF calendar for each month that has data and make
+     them available for download or initiate downloads for them or
+     something
+
+  3. [X] Produce an ICS file with the data and make it available for
+     download or initiate a download or something
+
+** Nice-to-have
+   - [ ] put a timestamp on the PDF files saying when they were
+     generated
+   - [X] better error handling in the code; right now it just 500s
+     when it doesn't like something
+     - [X] get the basics
+   - [X] some better styling so the page is prettier and has more
+     instructions and stuff
+     - [X] use flask_bootstrap and some lame styling
+   - [ ] password protect the whole thing
+
