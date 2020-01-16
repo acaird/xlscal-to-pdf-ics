@@ -194,4 +194,8 @@ def make_ics(events):
 
 if __name__ == "__main__":
     # Only for debugging while developing
-    app.run(host="0.0.0.0", debug=True, port=8080)
+    PORT = 8080
+    if "PORT" in os.environ:
+        PORT = os.environ["PORT"]
+
+    app.run(host="0.0.0.0", debug=True, port=PORT)
