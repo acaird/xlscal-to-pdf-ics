@@ -35,7 +35,7 @@ def upload():
 def upload_file():
     can_process = [".csv", ".xlsx"]
     if request.method == "POST":
-        if not "file" in request.files:
+        if "file" not in request.files:
             return (
                 "Please press your browser's Back "
                 "button and specify a file to upload."
