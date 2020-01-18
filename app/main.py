@@ -1,6 +1,6 @@
 from flask import Flask, request, Response, render_template
 from flask_bootstrap import Bootstrap
-from werkzeug import secure_filename
+from werkzeug.utils import secure_filename
 import os
 import csv
 import xlrd
