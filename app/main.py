@@ -1,12 +1,14 @@
 from flask import Flask, request, Response, render_template
 from flask_bootstrap import Bootstrap
 from werkzeug.utils import secure_filename
-import os
 import csv
-import xlrd
 import calendar
-from dateutil.parser import parse
+import logging
+import os
+import xlrd
 from datetime import datetime
+from dateutil.parser import parse
+from icalendar import Calendar, Event
 from io import BytesIO
 from reportlab.lib.units import inch
 from reportlab.lib import colors
@@ -19,8 +21,10 @@ from reportlab.platypus import (
     Paragraph,
     PageBreak,
 )
-from icalendar import Calendar, Event
 from zipfile import ZipFile
+
+
+LOG_FORMAT = "%(levelname)s: %(asctime)s %(message)s"
 
 app = Flask(__name__)
 Bootstrap(app)
@@ -91,11 +95,11 @@ def parse_csv(filename):
         try:
             reader = csv.reader(f)
             for line in reader:
-                line[0] = parse(line[0])
+                line[0] = parse(line[0]) # dateutil.parser
                 csv_line.append(line)
         except ValueError:
             return None
-
+    logging.debug(csv_line)
     return csv_line
 
 
@@ -124,9 +128,11 @@ def make_pdf_cals(events):
     doc = SimpleDocTemplate(buf, pagesize=letter)
     doc.pagesize = landscape(letter)
     elements = []
-
     months = set([d.month for d in events])
     years = set([d.year for d in events])
+    logging.debug(f"make_pdf_cals: Events: {events}")
+    logging.debug(f"make_pdf_cals: Months: {months}")
+    logging.debug(f"make_pdf_cals: Years: {years}")
 
     for year in years:
         for month in months:
@@ -163,8 +169,12 @@ def make_pdf_cals(events):
 
     return pdf
 
+def evt_to_lists(events):
+    pass
+
 
 def fill_cal(cal, mon, yr, events):
+    evts = evt_to_lists(events)
     for row, _ in enumerate(cal):
         for day, _ in enumerate(cal[row]):
             if not isinstance(cal[row][day], int) or int(cal[row][day]) < 1:
@@ -173,6 +183,10 @@ def fill_cal(cal, mon, yr, events):
                 continue
             date = "{}/{}/{}".format(mon, cal[row][day], yr)
             date = datetime.strptime(date, "%m/%d/%Y")
+            # this doesn't work because `date` is no longer just
+            # m/d/y, but also has time now; I need to remove the time
+            # part in the events dict before trying to reference it, I
+            # think
             if date in events:
                 cal[row][day] = str(cal[row][day]) + "\n{}".format(events[date])
 
@@ -185,11 +199,29 @@ def make_ics(events):
     for m in sorted(events):
         event = Event()
         event.add("summary", events[m])
-        event.add("dtstart", m.date())
+        logging.debug("Date: {}  Time: {}".format(m.date(), m.time()))
+        logging.debug(f"All: {m}")
+        # if the time is midnight, assume it's an all day event
+        if m.time() == "00:00:00":
+            event.add("dtstart", m.date())
+        else:
+            event.add("dtstart", m)
 
         ical.add_component(event)
 
     return ical.to_ical(ical)
+
+
+def _get_env_val(env_var, default=None):
+    """Utility to popular variables from os environment variables
+
+    Try to get the environment variable, otherwise return a default
+    """
+    env_val = os.getenv(env_var)
+    if env_val:
+        return env_val
+    else:
+        return default
 
 
 if __name__ == "__main__":
@@ -197,5 +229,16 @@ if __name__ == "__main__":
     PORT = 8080
     if "PORT" in os.environ:
         PORT = os.environ["PORT"]
+
+    LOG_LEVEL = _get_env_val("LOG_LEVEL", "DEBUG")
+    numeric_log_level = getattr(logging, LOG_LEVEL.upper(), None)
+    if not isinstance(numeric_log_level, int):
+        numeric_log_level = logging.DEBUG
+        logging.basicConfig(level=numeric_log_level, format=LOG_FORMAT)
+        logging.debug(
+            '"{}" is not a valid loglevel; defaulting to DEBUG'.format(LOG_LEVEL)
+        )
+
+    logging.basicConfig(level=numeric_log_level, format=LOG_FORMAT)
 
     app.run(host="0.0.0.0", debug=True, port=PORT)
