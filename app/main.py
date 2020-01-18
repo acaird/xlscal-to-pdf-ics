@@ -95,7 +95,7 @@ def parse_csv(filename):
         try:
             reader = csv.reader(f)
             for line in reader:
-                line[0] = parse(line[0]) # dateutil.parser
+                line[0] = parse(line[0])  # dateutil.parser
                 csv_line.append(line)
         except ValueError:
             return None
@@ -169,12 +169,27 @@ def make_pdf_cals(events):
 
     return pdf
 
+
 def evt_to_lists(events):
-    pass
+    evt = {}
+    for e in events:
+        date = datetime.strptime(
+            datetime.strftime(e, "%Y-%m-%d 00:00"), "%Y-%m-%d %H:%M"
+        )
+        if date not in evt:
+            evt[date] = []
+
+        time = datetime.strftime(e, "%H:%M")
+        if time == "00:00":
+            time = ""
+        evt[date].append("{} {}".format(time, events[e]))
+
+    return evt
 
 
 def fill_cal(cal, mon, yr, events):
     evts = evt_to_lists(events)
+    logging.debug("Evts: {}".format(evts))
     for row, _ in enumerate(cal):
         for day, _ in enumerate(cal[row]):
             if not isinstance(cal[row][day], int) or int(cal[row][day]) < 1:
@@ -187,8 +202,12 @@ def fill_cal(cal, mon, yr, events):
             # m/d/y, but also has time now; I need to remove the time
             # part in the events dict before trying to reference it, I
             # think
-            if date in events:
-                cal[row][day] = str(cal[row][day]) + "\n{}".format(events[date])
+            if date in evts:
+                for evt in evts[date]:
+                    cal[row][day] = str(cal[row][day]) + "\n{}".format(evt)
+                    logging.debug(f"fill_cal : evt : {evt}")
+            else:
+                logging.debug(f"No event on {date}")
 
     return cal
 
