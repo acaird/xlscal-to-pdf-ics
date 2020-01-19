@@ -67,6 +67,10 @@ def upload_file():
             if ret is None:
                 return "The .xlsx file was badly formatted, check it again try again."
 
+        # Why do I hate myself.  Why couldn't this have been sensible
+        # like: evtdict[evt[0]] = {"title": evt[1], "location":
+        # evt[2], "notes": evt[3]} also why couldn't this have been
+        # all in one place so it wasn't scattered hither and yon.  fuck
         evtdict = {}
         for evt in ret:
             evtdict[evt[0]] = evt[1]
