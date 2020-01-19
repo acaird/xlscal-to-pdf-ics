@@ -1,5 +1,12 @@
-<style>
-.body {
-    margin: 0px;
+.container {
+    width: 75%;
+
 }
-</style>
+#inp {
+  text-align: center;
+  margin: auto;
+}
+th, td {
+    padding: 5px;
+    background-color:none;
+}
