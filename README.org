@@ -397,3 +397,8 @@
      - [X] use flask_bootstrap and some lame styling
    - [ ] password protect the whole thing
 
+** Deployment
+
+   - Kubernetes
+
+   - Google Cloud run: https://alexolivier.me/posts/deploy-container-stateless-cheap-google-cloud-run-serverless
