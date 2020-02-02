@@ -76,6 +76,8 @@ class EventList:
                 reader = csv.reader(f)
                 for line in reader:
                     line[0] = parse(line[0])  # dateutil.parser
+                    if len(line) > 2:
+                        line[2] = parse(line[2])
                     csv_lines.append(line)
             except ValueError as e:
                 logging.debug(e)
@@ -105,6 +107,7 @@ class EventList:
         for rowx in range(sheet.nrows):
             cols = sheet.row_values(rowx)
             cols[0] = datetime(*xlrd.xldate_as_tuple(cols[0], workbook.datemode))
+            cols[2] = datetime(*xlrd.xldate_as_tuple(cols[0], workbook.datemode))
 
             xls_line.append(cols)
 
@@ -136,6 +139,13 @@ class EventList:
         for event in events:
             event_obj = dict.fromkeys(self.headers)
             for index, field in enumerate(event):
+                if self.headers[index] == "endtime":
+                    if field < event_obj["time"]:
+                        field = field.replace(
+                            year=event_obj["time"].year,
+                            month=event_obj["time"].month,
+                            day=event_obj["time"].day,
+                        )
                 event_obj[self.headers[index]] = field
             logging.debug(event_obj)
             events_list.append(event_obj)
@@ -152,20 +162,24 @@ class EventList:
                 date = "{}/{}/{}".format(mon, cal[row][day], yr)
                 date = datetime.strptime(date, "%m/%d/%Y")
                 for event in self.events:
+                    cal_entry = ""
                     if event["time"].date() == date.date():
                         if event["time"].time() != "00:00:00":
-                            cal[row][day] = str(cal[row][day]) + "\n{}\n{}".format(
+                            cal_entry += "\n{}".format(
                                 datetime.strftime(event["time"], "%H:%M"),
-                                event["description"],
                             )
-                        else:
-                            cal[row][day] = str(cal[row][day]) + "\n{}".format(
-                                event["description"]
-                            )
+                            if "endtime" in event and event["endtime"] is not None:
+                                cal_entry += "-{}".format(
+                                    datetime.strftime(event["endtime"], "%H:%M"),
+                                )
 
-                        logging.debug(
-                            "fill_cal : event : {}".format(event["description"])
-                        )
+                        cal_entry += "\n{}".format(event["description"])
+                        if "location" in event and event["location"] is not None:
+                            cal_entry += "\n{}".format(event["location"])
+
+                        cal[row][day] = str(cal[row][day]) + cal_entry
+
+                        logging.debug(f"fill_cal : event : {cal_entry}")
                     else:
                         logging.debug(f"No event on {date}")
 
@@ -252,6 +266,10 @@ class EventList:
                 event.add("dtstart", e["time"].date())
             else:
                 event.add("dtstart", e["time"])
+            if "endtime" in e and e["endtime"] is not None:
+                event.add("dtend", e["endtime"])
+            if "location" in e and e["location"] is not None:
+                event.add("location", e["location"])
 
             ical.add_component(event)
 
