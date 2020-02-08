@@ -75,9 +75,12 @@ class EventList:
             try:
                 reader = csv.reader(f)
                 for line in reader:
+                    logging.debug(line)
                     line[0] = parse(line[0])  # dateutil.parser
+
                     if len(line) > 2:
-                        line[2] = parse(line[2])
+                        if line[2] is not None and line[2] != " " and line[2] != "":
+                            line[2] = parse(line[2])
                     csv_lines.append(line)
             except ValueError as e:
                 logging.debug(e)
@@ -138,14 +141,20 @@ class EventList:
 
         for event in events:
             event_obj = dict.fromkeys(self.headers)
+            logging.debug(f"[_structure_events] event: {event}")
             for index, field in enumerate(event):
-                if self.headers[index] == "endtime":
+                if self.headers[index] == "endtime" and isinstance(field, datetime):
+                    logging.debug(
+                        "Field: {} event_obj[time]: {}".format(field, event_obj["time"])
+                    )
                     if field < event_obj["time"]:
                         field = field.replace(
                             year=event_obj["time"].year,
                             month=event_obj["time"].month,
                             day=event_obj["time"].day,
                         )
+                if isinstance(field, str):
+                    field.strip()
                 event_obj[self.headers[index]] = field
             logging.debug(event_obj)
             events_list.append(event_obj)
@@ -168,7 +177,11 @@ class EventList:
                             cal_entry += "\n{}".format(
                                 datetime.strftime(event["time"], "%H:%M"),
                             )
-                            if "endtime" in event and event["endtime"] is not None:
+                            if (
+                                "endtime" in event
+                                and event["endtime"] is not None
+                                and isinstance(event["endtime"], datetime)
+                            ):
                                 cal_entry += "-{}".format(
                                     datetime.strftime(event["endtime"], "%H:%M"),
                                 )
@@ -266,7 +279,11 @@ class EventList:
                 event.add("dtstart", e["time"].date())
             else:
                 event.add("dtstart", e["time"])
-            if "endtime" in e and e["endtime"] is not None:
+            if (
+                "endtime" in e
+                and e["endtime"] is not None
+                and isinstance(e["endtime"], datetime)
+            ):
                 event.add("dtend", e["endtime"])
             if "location" in e and e["location"] is not None:
                 event.add("location", e["location"])
