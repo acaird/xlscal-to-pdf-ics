@@ -402,9 +402,127 @@
    - Kubernetes
 
    - Google Cloud run: https://alexolivier.me/posts/deploy-container-stateless-cheap-google-cloud-run-serverless
-* Build and Deploy
+* Github Automated Build and Push
 
-  To build the Docker image:
-  #+BEGIN_EXAMPLE
-    docker build . -t gcr.io/cal-pdf-ics/cal-pdf-ics:latest
-  #+END_EXAMPLE
+  Cool documentation at
+  https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions
+
+  #+BEGIN_SRC yaml
+    # This workflow will build a docker container, publish it to Google Container Registry, and deploy it to GKE.
+    #
+    # To configure this workflow:
+    #
+    # 1. Ensure that your repository contains the necessary configuration
+    # for your Google Kubernetes Engine cluster, including deployment.yml,
+    # kustomization.yml, service.yml, etc.
+    #
+    # 2. Set up secrets in your workspace: GKE_PROJECT with the name of
+    # the project, GKE_EMAIL with the service account email, GKE_KEY with
+    # the Base64 encoded JSON service account key
+    # (https://github.com/GoogleCloudPlatform/github-actions/tree/docs/service-account-key/setup-gcloud#inputs).
+    #
+    # 3. Change the values for the GKE_ZONE, GKE_CLUSTER, IMAGE,
+    # REGISTRY_HOSTNAME and DEPLOYMENT_NAME environment variables (below).
+
+    name: Build and Push to GCR
+
+    on:
+      push:
+	tags:
+	  - v*
+
+    # Environment variables available to all jobs and steps in this workflow
+    #  GKE_EMAIL: ${{ secrets.GKE_EMAIL }}
+    #  GKE_KEY: ${{ secrets.GKE_KEY }}
+    env:
+      GITHUB_SHA: ${{ github.sha }}
+      GITHUB_REF: ${{ github.ref }}
+      IMAGE: cal-pdf-ics/cal-pdf-ics
+      REGISTRY_HOSTNAME: gcr.io
+
+
+    jobs:
+      setup-build-publish-deploy:
+	name: Setup, Build, and Publish
+	runs-on: ubuntu-latest
+	steps:
+
+	- name: Checkout
+	  uses: actions/checkout@v2
+
+	# Setup gcloud CLI
+	- uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+	  with:
+	    version: '270.0.0'
+	    service_account_key: ${{ secrets.GCR_KEY }}
+
+	# Configure docker to use the gcloud command-line tool as a credential helper
+	- run: |
+	    # Set up docker to authenticate
+	    # via gcloud command-line tool.
+	    gcloud auth configure-docker
+
+	# Build the Docker image
+	- name: Build
+	  run: |
+	    export TAG=`echo $GITHUB_REF | awk -F/ '{print $NF}'`
+	    echo $TAG
+	    docker build -t "$REGISTRY_HOSTNAME"/"$IMAGE":"$TAG" \
+	      --build-arg GITHUB_SHA="$GITHUB_SHA" \
+	      --build-arg GITHUB_REF="$GITHUB_REF" .
+
+	# Push the Docker image to Google Container Registry
+	- name: Publish
+	  run: |
+	    export TAG=`echo $GITHUB_REF | awk -F/ '{print $NF}'`
+	    echo $TAG
+	    docker push "$REGISTRY_HOSTNAME"/"$IMAGE":"$TAG"
+	    docker tag "$REGISTRY_HOSTNAME"/"$IMAGE":"$TAG" "$REGISTRY_HOSTNAME"/"$IMAGE":latest
+	    docker push "$REGISTRY_HOSTNAME"/"$IMAGE":latest
+  #+END_SRC
+
+  This requires a Github secret for the project.
+
+  I made this following the instructions at
+  https://cloud.google.com/iam/docs/creating-managing-service-account-keys#iam-service-account-keys-create-console
+
+  To do this via the =gcloud= command line, first type:
+  #+BEGIN_SRC sh
+  gcloud iam service-accounts list --project $PROJECT_NAME
+  #+END_SRC
+  then create a token by typing:
+  #+BEGIN_SRC sh
+    gcloud iam service-accounts keys \
+	   create $PATH_TO_KEY_FILE \
+	   --iam-account $ACCOUNT_EMAIL_FROM_PRIOR_COMMAND \
+	   --project $PROJECT_NAME
+  #+END_SRC
+  this will create a file in =$PATH_TO_KEY_FILE=.
+
+  That file needs to be base64-encoded and copied to the Github
+  project's secrets.
+   1. Go to the project's page at Github
+   2. From the list of options along the top of the project (below the
+      title) click "Settings" then from the menu on the left click
+      "Secrets"
+   3. Click Add Secret, set the Name to =GCR_KEY= and the Value to the
+      base64-encoded version of =$PATH_TO_KEY_FILE=.  Click the "Add
+      Secret" button
+
+  Now Github can access your Google project; there may be better
+  security that this, but :shrug:
+
+  Add the YAML file to =$PROJECT_ROOT/.github/workflows/google.yml
+
+  Now when you push a branch, it will get built, tagged with the
+  branch version and the =latest= version.
+
+  This still won't make that version show up in Google Cloud Run when
+  you access your application.  For that, there is more...
+
+
+** To Do
+   - [X] make authentication file using =gcloud= command line
+   - [ ] set up builds to only happen on new tags, and use tag as
+     image tag
+   - [ ] actually re-deploy Google Cloud Run image when that happens
