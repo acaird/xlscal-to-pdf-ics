@@ -49,7 +49,8 @@ jobs:
     # Build the Docker image
     - name: Build
       run: |
-        TAG=`echo $GITHUB_REF | awk -F/ '{print $NF}'` \
+        export TAG=`echo $GITHUB_REF | awk -F/ '{print $NF}'`
+        echo $TAG
         docker build -t "$REGISTRY_HOSTNAME"/"$IMAGE":"$TAG" \
           --build-arg GITHUB_SHA="$GITHUB_SHA" \
           --build-arg GITHUB_REF="$GITHUB_REF" .
@@ -57,5 +58,6 @@ jobs:
     # Push the Docker image to Google Container Registry
     - name: Publish
       run: |
-        TAG=`echo $GITHUB_REF | awk -F/ '{print $NF}'` \
+        export TAG=`echo $GITHUB_REF | awk -F/ '{print $NF}'`
+        echo $TAG
         docker push "$REGISTRY_HOSTNAME"/"$IMAGE":"$TAG"
