@@ -12,16 +12,18 @@ name: Build and Push to GCR
 
 on:
   push:
-    branches:
-    - master
+    tags:
+    - *
 
 # Environment variables available to all jobs and steps in this workflow
 #  GKE_EMAIL: ${{ secrets.GKE_EMAIL }}
 #  GKE_KEY: ${{ secrets.GKE_KEY }}
 env:
   GITHUB_SHA: ${{ github.sha }}
+  GITHUB_REF: ${{ github.ref }}
   IMAGE: cal-pdf-ics/cal-pdf-ics
   REGISTRY_HOSTNAME: gcr.io
+  IMAGE_FULL_PATH="$REGISTRY_HOSTNAME"/"$IMAGE":"GITHUB_REF"
 
 jobs:
   setup-build-publish-deploy:
@@ -36,8 +38,7 @@ jobs:
     - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
       with:
         version: '270.0.0'
-        service_account_key: ${{ secrets.GKE_KEY }}
-        #service_account_email: ${{ secrets.GKE_EMAIL }}
+        service_account_key: ${{ secrets.GCR_KEY }}
 
     # Configure docker to use the gcloud command-line tool as a credential helper
     - run: |
@@ -48,11 +49,11 @@ jobs:
     # Build the Docker image
     - name: Build
       run: |
-        docker build -t "$REGISTRY_HOSTNAME"/"$IMAGE":"$GITHUB_SHA" \
+        docker build -t "$IMAGE_FULL_PATH" \
           --build-arg GITHUB_SHA="$GITHUB_SHA" \
           --build-arg GITHUB_REF="$GITHUB_REF" .
 
     # Push the Docker image to Google Container Registry
     - name: Publish
       run: |
-        docker push $REGISTRY_HOSTNAME/$IMAGE:$GITHUB_SHA
+        docker push "$IMAGE_FULL_PATH"
