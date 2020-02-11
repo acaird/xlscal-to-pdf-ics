@@ -58,9 +58,9 @@
     - https://cloudacademy.com/blog/the-4-best-docker-hosting-services/
 
     - https://aws.amazon.com/fargate/
-    
+
       - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_GetStarted.html?nc2=type_a
-      
+
     - https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-public-ip-address
 
       - =brew install az= installs the Azure cli command
@@ -72,7 +72,7 @@
       - https://docs.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain
 
       - https://docs.microsoft.com/en-us/azure/aks/tutorial-kubernetes-app-update
-    
+
     - https://cloud.google.com/kubernetes-engine/docs/tutorials/configuring-domain-name-static-ip
 
       - https://console.cloud.google.com/kubernetes
@@ -172,8 +172,8 @@
 
    #+RESULTS:
    : CURRENT   NAME                 CLUSTER                      AUTHINFO                                   NAMESPACE
-   :           docker-for-desktop   docker-for-desktop-cluster   docker-for-desktop                         
-   : *         xls2cal              xls2cal                      clusterUser_acaird-xls2cal_xls2cal         
+   :           docker-for-desktop   docker-for-desktop-cluster   docker-for-desktop
+   : *         xls2cal              xls2cal                      clusterUser_acaird-xls2cal_xls2cal
 
    #+BEGIN_SRC sh :exports both :results output
    kubectl apply -f xls2cal.yaml
@@ -372,7 +372,7 @@
    [pid: 13|app: 0|req: 29/47] 10.244.0.1 () {38 vars in 596 bytes} [Sun Feb 10 19:16:55 2019] GET /favicon.ico => generated 233 bytes in 0 msecs (HTTP/1.1 404) 2 headers in 72 bytes (1 switches on core 0)
    10.244.0.1 - - [10/Feb/2019:19:16:55 +0000] "GET /favicon.ico HTTP/1.1" 404 233 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:64.0) Gecko/20100101 Firefox/64.0" "-"
    #+end_example
-   
+
 * Project Plan
 
   1. [X] Get Docker-ized Flask app that accepts the upload of an Excel
@@ -402,3 +402,9 @@
    - Kubernetes
 
    - Google Cloud run: https://alexolivier.me/posts/deploy-container-stateless-cheap-google-cloud-run-serverless
+* Build and Deploy
+
+  To build the Docker image:
+  #+BEGIN_EXAMPLE
+    docker build . -t gcr.io/cal-pdf-ics/cal-pdf-ics:latest
+  #+END_EXAMPLE
