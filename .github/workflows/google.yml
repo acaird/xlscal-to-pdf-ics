@@ -23,7 +23,7 @@ env:
   GITHUB_REF: ${{ github.ref }}
   IMAGE: cal-pdf-ics/cal-pdf-ics
   REGISTRY_HOSTNAME: gcr.io
-  IMAGE_FULL_PATH="$REGISTRY_HOSTNAME"/"$IMAGE":"GITHUB_REF"
+  IMAGE_FULL_PATH: "$REGISTRY_HOSTNAME"/"$IMAGE":"GITHUB_REF"
 
 jobs:
   setup-build-publish-deploy:
