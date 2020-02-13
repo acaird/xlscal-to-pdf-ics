@@ -526,3 +526,142 @@
    - [ ] set up builds to only happen on new tags, and use tag as
      image tag
    - [ ] actually re-deploy Google Cloud Run image when that happens
+* Investigating a =gcloud run= instance
+
+  Many fun commands.
+
+  - List the services
+    #+BEGIN_SRC sh
+      gcloud run services list --platform managed
+    #+END_SRC
+    #+BEGIN_EXAMPLE
+         SERVICE      REGION       URL                                          LAST DEPLOYED BY  LAST DEPLOYED AT
+      +  cal-pdf-ics  us-central1  https://cal-pdf-ics-qzug6go32q-uc.a.run.app  acaird@gmail.com  2020-01-18T20:49:57.875Z
+    #+END_EXAMPLE
+
+  - List the projects:
+    #+BEGIN_SRC sh
+      gcloud run revisions list --region us-central1 --platform managed
+    #+END_SRC
+    #+BEGIN_EXAMPLE
+         REVISION               ACTIVE  SERVICE      DEPLOYED                 DEPLOYED BY
+      +  cal-pdf-ics-00003-fal  yes     cal-pdf-ics  2020-01-18 20:49:43 UTC  acaird@gmail.com
+    #+END_EXAMPLE
+
+  - List the images in the project
+    #+BEGIN_SRC sh
+      gcloud container images list --project cal-pdf-ics
+    #+END_SRC
+    #+BEGIN_EXAMPLE
+      NAME
+      gcr.io/cal-pdf-ics/cal-pdf-ics
+    #+END_EXAMPLE
+
+  - List the tags for a given image in a project
+    #+BEGIN_SRC sh
+      gcloud container images list-tags gcr.io/cal-pdf-ics/cal-pdf-ics
+    #+END_SRC
+    #+BEGIN_EXAMPLE
+      DIGEST        TAGS                                      TIMESTAMP
+      e3ae68fe03b8  latest,v0.84                              2020-02-11T15:14:39
+      b7baca4e21ec  v0.83                                     2020-02-11T15:09:08
+      b175bd33fc7a  GITHUB_REF                                2020-02-11T14:57:38
+      bc3ba66b5286  c8617a563c703f2c6814110fb6f9fa4974df1b26  2020-02-11T09:17:15
+      79fc49734706                                            2020-02-11T08:16:13
+      e1deff5d707d                                            2020-01-18T15:48:33
+      002076e7d4a7                                            2020-01-15T20:23:08
+      76c434c653c5                                            2020-01-15T19:31:49
+    #+END_EXAMPLE
+
+  - List the Kubernetes details for a project
+    #+BEGIN_SRC sh
+    gcloud run revisions describe --region us-central1 --platform managed cal-pdf-ics-00003-fal
+    #+END_SRC
+
+  - Delete an image with the (literal) tag =GITHUB_REF= (because I can't
+    work shell variables); the =--quiet= flag prevents the confirmation
+    prompt (weird name for that behavior, right?)
+    #+BEGIN_SRC sh
+      gcloud container images delete gcr.io/cal-pdf-ics/cal-pdf-ics:GITHUB_REF --quiet
+    #+END_SRC
+    #+BEGIN_EXAMPLE
+      Digests:
+      - gcr.io/cal-pdf-ics/cal-pdf-ics@sha256:b175bd33fc7af4262154bbac39f7a080f01d7801c0e5599db29ee7913b5e1b62
+        Associated tags:
+       - GITHUB_REF
+      Tags:
+      - gcr.io/cal-pdf-ics/cal-pdf-ics:GITHUB_REF
+      Deleted [gcr.io/cal-pdf-ics/cal-pdf-ics:GITHUB_REF].
+      Deleted [gcr.io/cal-pdf-ics/cal-pdf-ics@sha256:b175bd33fc7af4262154bbac39f7a080f01d7801c0e5599db29ee7913b5e1b62].
+    #+END_EXAMPLE
+    (Note that the digest listed here is the long version of the digest
+    from the =container images list-tags= =DIGEST= column shown above,
+    =b175...=)
+
+  - Reporting what image a service is using
+    #+BEGIN_SRC sh
+      gcloud run revisions describe \
+  	   --region us-central1 \
+  	   --platform managed \
+  	   --format=json cal-pdf-ics-00003-fal | \
+  	jq '.spec.containers[].image'
+    #+END_SRC
+    #+BEGIN_EXAMPLE
+      "gcr.io/cal-pdf-ics/cal-pdf-ics@sha256:e1deff5d707dbf56a25450ceeecf8d7d4d6c69db84b5d12adf31b2aba54030ee"
+    #+END_EXAMPLE
+    Comparing that to the list of images above, this is the image from
+    "2020-01-18T15:48:33" that is untagged.  Also, there might be a
+    better way of finding this information. (lmk [[https://twitter.com/acaird][@acaird]])
+
+  - Changing what image a service is using to the image tagged =:latest=
+    #+BEGIN_SRC sh
+      gcloud run deploy cal-pdf-ics \
+	     --platform managed \
+	     --region us-central1 \
+	     --image gcr.io/cal-pdf-ics/cal-pdf-ics:latest
+    #+END_SRC
+    This can take a few tens of seconds to complete with the final
+    output being something like
+    #+BEGIN_EXAMPLE
+      Deploying container to Cloud Run service [cal-pdf-ics] in project [cal-pdf-ics] region [us-central1]
+      ✓ Deploying... Done.
+	✓ Creating Revision...
+	✓ Routing traffic...
+      Done.
+      Service [cal-pdf-ics] revision [cal-pdf-ics-00004-hab] has been deployed and is serving 100 percent of traffic at https://cal-pdf-ics-qzug6go32q-uc.a.run.app
+    #+END_EXAMPLE
+    This can then be confirmed by listing the tags for a given image
+    in a project
+    #+BEGIN_SRC sh :results output
+      gcloud container images list-tags gcr.io/cal-pdf-ics/cal-pdf-ics
+    #+END_SRC
+
+    #+RESULTS:
+    : DIGEST        TAGS          TIMESTAMP
+    : e3ae68fe03b8  latest,v0.84  2020-02-11T15:14:39
+    : b7baca4e21ec  v0.83         2020-02-11T15:09:08
+    : 79fc49734706                2020-02-11T08:16:13
+    : e1deff5d707d                2020-01-18T15:48:33
+    : 002076e7d4a7                2020-01-15T20:23:08
+    : 76c434c653c5                2020-01-15T19:31:49
+    and then you can see that the service revision changed from
+    =cal-pdf-ics-00003-fal= to =cal-pdf-ics-00004-hab=:
+    #+BEGIN_SRC sh :results output
+      gcloud run revisions list --region us-central1 --platform managed
+    #+END_SRC
+
+    #+RESULTS:
+    :    REVISION               ACTIVE  SERVICE      DEPLOYED                 DEPLOYED BY
+    : +  cal-pdf-ics-00004-hab  yes     cal-pdf-ics  2020-02-13 04:33:14 UTC  acaird@gmail.com
+    : +  cal-pdf-ics-00003-fal          cal-pdf-ics  2020-01-18 20:49:43 UTC  acaird@gmail.com
+    and then checking what image is actually running
+    #+BEGIN_SRC sh
+      gcloud run revisions describe \
+	   --region us-central1 \
+	   --platform managed \
+	   --format=json cal-pdf-ics-00004-hab |
+	jq '.spec.containers[].image'
+    #+END_SRC
+
+    #+RESULTS:
+    : gcr.io/cal-pdf-ics/cal-pdf-ics:latest
