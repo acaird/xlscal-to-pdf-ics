@@ -1,0 +1,46 @@
+#+OPTIONS: toc:t ^:{}
+
+#+TITLE: README
+#+DATE: <2020-02-24 Mon>
+#+AUTHOR: Andy Caird
+#+EMAIL: acaird@gmail.com
+
+* Setup
+
+  #+BEGIN_EXAMPLE
+  python3 -mvenv .venv
+  . .venv/bin/activate
+  pip install -r requirements.txt
+  webdrivermanager firefox --linkpath .venv/bin
+  #+END_EXAMPLE
+
+* Running
+
+  #+BEGIN_EXAMPLE
+  robot t.robot
+  #+END_EXAMPLE
+
+  It should print something like:
+  #+BEGIN_EXAMPLE
+    ==============================================================================
+    T :: Test the xls-to-pdf-ical website
+    ==============================================================================
+    Page Loads                                                            | PASS |
+    ------------------------------------------------------------------------------
+    T :: Test the xls-to-pdf-ical website                                 | PASS |
+    1 critical test, 1 passed, 0 failed
+    1 test total, 1 passed, 0 failed
+    ==============================================================================
+    Output:  /Users/YourLogin/git/xlscal-to-pdf-ics/test/output.xml
+    Log:     /Users/YourLogin/git/xlscal-to-pdf-ics/test/log.html
+    Report:  /Users/YourLogin/git/xlscal-to-pdf-ics/test/report.html
+  #+END_EXAMPLE
+
+  To use a different URL, either edit the variable in the =t.robot=
+  file or run it like this, replaing =https://www.github.com= with
+  whatever URL you want to test (for example, =http://localhost:8080=
+  if you want to test a local verion):
+
+  #+BEGIN_EXAMPLE
+  robot --variable URL:https://www.github.com t.robot
+  #+END_EXAMPLE
