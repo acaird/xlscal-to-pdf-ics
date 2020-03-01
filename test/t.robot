@@ -3,7 +3,9 @@ Documentation     Test the xls-to-pdf-ical website
 Library           SeleniumLibrary
 Library           OperatingSystem
 Library           ArchiveLibrary
+Library           DiffLibrary
 Library           lib/CreateProfile.py
+Library           lib/FlexiPDFdiff.py
 
 *** Variables ***
 ${URL}            http://calendar.acaird.com
@@ -29,5 +31,12 @@ Close Browser
 
 Unzip Downloaded File
 	extract_zip_file    ${DLDIR}/cals-sample.zip  ${DLDIR}
+
+Compare Downloaded ICS file to Answer ICS file
+	Diff Files      ${DLDIR}/calendar-sample.ics   answers/calendar-sample.ics
+
+Compare Downloaded PDF file to Answer PDF file
+	Flexi PDF Diff      ${DLDIR}/calendar-sample.pdf   answers/calendar-sample.pdf
+
 
 *** Keywords ***
