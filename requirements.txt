@@ -11,7 +11,7 @@ Flask==1.1.1
 Flask-Bootstrap==3.3.7.1
 funcsigs==1.0.2
 future==0.17.1
-httplib2==0.12.0
+httplib2==0.18.0
 icalendar==4.0.4
 idna==2.8
 isodate==0.6.0
