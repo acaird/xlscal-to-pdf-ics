@@ -35,7 +35,7 @@ python-dateutil==2.7.5
 pytz==2018.9
 pyxnat==1.2.1.0.post3
 rdflib==4.2.2
-reportlab==3.5.13
+reportlab>=3.5.55
 requests==2.21.0
 scipy==1.2.0
 simplejson==3.16.0
