@@ -8,7 +8,8 @@ Library           lib/CreateProfile.py
 Library           lib/FlexiPDFdiff.py
 
 *** Variables ***
-${URL}            http://calendar.acaird.com
+#${URL}            http://calendar.acaird.com
+${URL}            http://localhost:8080
 ${DLDIR}          ${CURDIR}/downloads
 ${DLBUTTON}       Create Zip file of PDF and ICS files
 ${BROWSER}        Headless Firefox
@@ -18,8 +19,10 @@ Page Loads
 	Log                ${profile}
 	Open Browser       ${URL}    ${BROWSER}   ff_profile_dir=${profile}
 	Title Should Be    Excel to Calendars
+
 Upload File
 	Choose File        id:inp     ${CURDIR}/sample.csv
+
 Download File
 	Create Directory             ${DLDIR}
 	Empty Directory	             ${DLDIR}
