@@ -44,3 +44,8 @@
   #+BEGIN_EXAMPLE
   robot --variable URL:https://www.github.com t.robot
   #+END_EXAMPLE
+
+* Resources
+
+  - https://medium.com/@ypasmk/robot-framework-with-docker-in-less-than-10-minutes-7b86df769c22
+  - https://blog.codecentric.de/en/2019/02/running-robot-framework-in-your-own-docker-container/
