@@ -55,7 +55,7 @@ class EventList:
             message = (
                 'Files of type "{}" cannot be processed, please '
                 "upload a file of one of these types: {}".format(
-                    fileext, ", ".join(self.can_process)
+                    self.fileext, ", ".join(self.can_process)
                 )
             )
             return message
@@ -79,7 +79,11 @@ class EventList:
                     line[0] = parse(line[0])  # dateutil.parser
 
                     if len(line) > 2:
-                        if line[2] is not None and line[2] != " " and line[2] != "":
+                        if (
+                                line[2] is not None
+                                and line[2] != " "
+                                and line[2] != ""
+                           ):
                             line[2] = parse(line[2])
                     csv_lines.append(line)
             except ValueError as e:
@@ -109,8 +113,10 @@ class EventList:
 
         for rowx in range(sheet.nrows):
             cols = sheet.row_values(rowx)
-            cols[0] = datetime(*xlrd.xldate_as_tuple(cols[0], workbook.datemode))
-            cols[2] = datetime(*xlrd.xldate_as_tuple(cols[0], workbook.datemode))
+            cols[0] = datetime(*xlrd.xldate_as_tuple(cols[0],
+                                                     workbook.datemode))
+            cols[2] = datetime(*xlrd.xldate_as_tuple(cols[0],
+                                                     workbook.datemode))
 
             xls_line.append(cols)
 
@@ -143,9 +149,13 @@ class EventList:
             event_obj = dict.fromkeys(self.headers)
             logging.debug(f"[_structure_events] event: {event}")
             for index, field in enumerate(event):
-                if self.headers[index] == "endtime" and isinstance(field, datetime):
+                if (
+                        self.headers[index] == "endtime"
+                        and isinstance(field, datetime)
+                ):
                     logging.debug(
-                        "Field: {} event_obj[time]: {}".format(field, event_obj["time"])
+                        "Field: {} event_obj[time]: {}".
+                        format(field, event_obj["time"])
                     )
                     if field < event_obj["time"]:
                         field = field.replace(
@@ -164,7 +174,10 @@ class EventList:
     def _fill_cal(self, cal, mon, yr):
         for row, _ in enumerate(cal):
             for day, _ in enumerate(cal[row]):
-                if not isinstance(cal[row][day], int) or int(cal[row][day]) < 1:
+                if (
+                        not isinstance(cal[row][day], int)
+                        or int(cal[row][day]) < 1
+                ):
                     if cal[row][day] == 0:
                         cal[row][day] = ""
                     continue
@@ -183,11 +196,15 @@ class EventList:
                                 and isinstance(event["endtime"], datetime)
                             ):
                                 cal_entry += "-{}".format(
-                                    datetime.strftime(event["endtime"], "%H:%M"),
+                                    datetime.strftime(
+                                        event["endtime"], "%H:%M"),
                                 )
 
                         cal_entry += "\n{}".format(event["description"])
-                        if "location" in event and event["location"] is not None:
+                        if (
+                                "location" in event
+                                and event["location"] is not None
+                        ):
                             cal_entry += "\n{}".format(event["location"])
 
                         cal[row][day] = str(cal[row][day]) + cal_entry
@@ -209,11 +226,13 @@ class EventList:
         if self.fileext == ".csv":
             events = self._parse_csv()
             if events is None:
-                return "The .csv file was badly formatted, check it again try again."
+                return ("The .csv file was badly formatted, "
+                        "check it and try again.")
         if self.fileext == ".xlsx":
-            events = self._parse_xlsx(sfname)
+            events = self._parse_xlsx(self.sfname)
             if events is None:
-                return "The .xlsx file was badly formatted, check it again try again."
+                return ("The .xlsx file was badly formatted, "
+                        "check it and try again.")
 
         self.events = self._structure_events(events)
 
@@ -249,7 +268,8 @@ class EventList:
                             ("FONT", (0, 0), (-1, -1), "Helvetica"),
                             ("FONT", (0, 0), (-1, 0), "Helvetica-Bold"),
                             ("FONTSIZE", (0, 0), (-1, -1), 8),
-                            ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.black),
+                            ("INNERGRID", (0, 0), (-1, -1), 0.25,
+                             colors.black),
                             ("BOX", (0, 0), (-1, -1), 0.25, colors.green),
                             ("ALIGN", (0, 0), (-1, -1), "LEFT"),
                             ("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -325,7 +345,6 @@ def upload():
 
 @app.route("/uploader", methods=["GET", "POST"])
 def upload_file():
-    can_process = [".csv", ".xlsx"]
 
     if request.method == "POST":
         if "file" not in request.files:
@@ -368,7 +387,8 @@ if __name__ == "__main__":
         numeric_log_level = logging.DEBUG
         logging.basicConfig(level=numeric_log_level, format=LOG_FORMAT)
         logging.debug(
-            '"{}" is not a valid loglevel; defaulting to DEBUG'.format(LOG_LEVEL)
+            '"{}" is not a valid loglevel; defaulting to DEBUG'.
+            format(LOG_LEVEL)
         )
 
     logging.basicConfig(level=numeric_log_level, format=LOG_FORMAT)
