@@ -65,6 +65,9 @@ class EventList:
     def _parse_csv(self):
         """Parse an uploaded CSV file
 
+        Input
+        -----
+        date time, title, endtime, location
         Returns
         -------
         list
@@ -86,8 +89,8 @@ class EventList:
                            ):
                             line[2] = parse(line[2])
                     csv_lines.append(line)
-            except ValueError as e:
-                logging.debug(e)
+            except ValueError as err:
+                logging.debug(err)
                 csv_lines = None
 
         logging.debug(csv_lines)
@@ -103,8 +106,8 @@ class EventList:
         """
         try:
             workbook = xlrd.open_workbook(self.filename)
-        except xlrd.biffh.XLRDError as e:
-            logging.debug(e)
+        except xlrd.biffh.XLRDError as err:
+            logging.debug(err)
             return None
 
         sheet = workbook.sheet_by_index(0)
@@ -147,15 +150,15 @@ class EventList:
 
         for event in events:
             event_obj = dict.fromkeys(self.headers)
-            logging.debug(f"[_structure_events] event: {event}")
+            logging.debug("[_structure_events] event: %s", event)
             for index, field in enumerate(event):
                 if (
                         self.headers[index] == "endtime"
                         and isinstance(field, datetime)
                 ):
                     logging.debug(
-                        "Field: {} event_obj[time]: {}".
-                        format(field, event_obj["time"])
+                        "Field: %s event_obj[time]: %s",
+                        field, event_obj["time"]
                     )
                     if field < event_obj["time"]:
                         field = field.replace(
@@ -171,7 +174,7 @@ class EventList:
 
         return events_list
 
-    def _fill_cal(self, cal, mon, yr):
+    def _fill_cal(self, cal, mon, year):
         for row, _ in enumerate(cal):
             for day, _ in enumerate(cal[row]):
                 if (
@@ -181,7 +184,7 @@ class EventList:
                     if cal[row][day] == 0:
                         cal[row][day] = ""
                     continue
-                date = "{}/{}/{}".format(mon, cal[row][day], yr)
+                date = "{}/{}/{}".format(mon, cal[row][day], year)
                 date = datetime.strptime(date, "%m/%d/%Y")
                 for event in self.events:
                     cal_entry = ""
