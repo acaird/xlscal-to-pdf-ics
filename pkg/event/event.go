@@ -2,6 +2,7 @@ package event
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/araddon/dateparse"
@@ -18,12 +19,16 @@ type Event struct {
 type Events []Event
 
 func (e *Events) Print() {
+	// Print dumps the parsed information to a tab-separated list of event details
 	for _, event := range *e {
 		fmt.Printf("%v\t%v\t%s\t%s\n", event.startDate, event.endDate, event.title, event.location)
 	}
 }
 
 func (e *Events) Parse(records [][]string) {
+	// Parse takes a slice of slices, where the inner slice is of
+	// the format: startTime, title, endTime, location, and sets
+	// `e` to a list of Event structs
 	for _, record := range records {
 		var event Event
 		var err error
@@ -54,6 +59,8 @@ func (e *Events) Parse(records [][]string) {
 }
 
 func (e Events) MakeICS() string {
+	// MakeICS returns a string representation of an ICS file that
+	// can be imported into a calendar program
 	cal := ics.NewCalendar()
 	cal.SetMethod(ics.MethodAdd)
 	for _, evt := range e {
@@ -68,4 +75,21 @@ func (e Events) MakeICS() string {
 		event.SetLocation(evt.location)
 	}
 	return cal.Serialize()
+}
+
+func (e Events) Months() []time.Time {
+	// Months returns a sorted list of year/month data
+	eventMonths := make(map[time.Time]bool)
+	for _, evt := range e {
+		eventMonths[time.Date(evt.endDate.Year(), evt.endDate.Month(), 1, 0, 0, 0, 0, evt.endDate.Location())] = true
+		eventMonths[time.Date(evt.startDate.Year(), evt.startDate.Month(), 1, 0, 0, 0, 0, evt.startDate.Location())] = true
+	}
+	var months []time.Time
+	for month := range eventMonths {
+		months = append(months, month)
+	}
+	sort.Slice(months, func(i, j int) bool {
+		return months[i].Before(months[j])
+	})
+	return months
 }
