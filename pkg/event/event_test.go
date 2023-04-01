@@ -1,14 +1,14 @@
 package event
 
 import (
+	"reflect"
+	"testing"
 	"time"
 
 	"gotest.tools/v3/assert"
-
-	"testing"
 )
 
-func TestParseCSV(t *testing.T) {
+func TestEvents_ParseCSV(t *testing.T) {
 	csv := [][]string{}
 	csv = append(csv, []string{"1/3/2006 16:00", "event 1", "1/3/2006 17:00", "location 1"})
 	// csv = append(csv, []string{"1/3/2006 16:00", "event 1", "17:00", "location 1"})
@@ -20,4 +20,127 @@ func TestParseCSV(t *testing.T) {
 	assert.Equal(t, events[0].location, "location 1")
 	assert.Equal(t, events[0].title, "event 1")
 	assert.Check(t, events[0].startDate.Equal(time.Date(2006, 1, 3, 16, 0, 0, 0, events[0].startDate.Location())))
+}
+
+func TestEvents_Print(t *testing.T) {
+	tests := []struct {
+		name string
+		e    *Events
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.e.Print()
+		})
+	}
+}
+
+// func TestEvents_ParseCSV(t *testing.T) {
+// 	type args struct {
+// 		records [][]string
+// 	}
+// 	tests := []struct {
+// 		name    string
+// 		e       *Events
+// 		args    args
+// 		wantErr bool
+// 	}{
+// 		// TODO: Add test cases.
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			if err := tt.e.ParseCSV(tt.args.records); (err != nil) != tt.wantErr {
+// 				t.Errorf("Events.ParseCSV() error = %v, wantErr %v", err, tt.wantErr)
+// 			}
+// 		})
+// 	}
+// }
+
+func TestEvents_MakeICS(t *testing.T) {
+	tests := []struct {
+		name string
+		e    Events
+		want string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.e.MakeICS(); got != tt.want {
+				t.Errorf("Events.MakeICS() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEvents_Months(t *testing.T) {
+	tests := []struct {
+		name string
+		e    Events
+		want []time.Time
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.e.Months(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Events.Months() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEvents_PdfCal(t *testing.T) {
+	type args struct {
+		filename string
+	}
+	tests := []struct {
+		name    string
+		e       Events
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.e.PdfCal(tt.args.filename); (err != nil) != tt.wantErr {
+				t.Errorf("Events.PdfCal() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEvent_InMonth(t *testing.T) {
+	type fields struct {
+		startDate time.Time
+		title     string
+		endDate   time.Time
+		location  string
+	}
+	type args struct {
+		month time.Time
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := Event{
+				startDate: tt.fields.startDate,
+				title:     tt.fields.title,
+				endDate:   tt.fields.endDate,
+				location:  tt.fields.location,
+			}
+			if got := e.InMonth(tt.args.month); got != tt.want {
+				t.Errorf("Event.InMonth() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
