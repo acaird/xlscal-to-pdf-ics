@@ -53,7 +53,12 @@ func (e *Events) ParseCSV(records [][]string) error {
 			if record[2] != "" {
 				end, err = dateparse.ParseLocal(record[2])
 				if err != nil {
-					return err
+					endTime, err = time.Parse("15:04", record[2])
+					if err != nil {
+						return err
+					}
+					end = time.Date(event.startDate.Year(), event.startDate.Month(), event.startDate.Day(),
+						endTime.Hour(), endTime.Minute(), 0, 0, event.startDate.Location())
 				}
 			} else {
 				endTime, _ = time.Parse("15:04", "23:59")
