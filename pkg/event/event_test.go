@@ -123,13 +123,36 @@ func TestEvent_InMonth(t *testing.T) {
 	type args struct {
 		month time.Time
 	}
+	time_one, _ := time.Parse("2006-01-02T15:00", "2023-02-05T14:00")
+	time_two, _ := time.Parse("2006-01-02T05:00", "2023-02-25T14:00")
+	time_three, _ := time.Parse("2006-01-02T15:00", "2023-03-05T14:00")
+
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
 		want   bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "in month",
+			fields: fields{
+				startDate: time_one,
+			},
+			args: args{
+				time_two,
+			},
+			want: true,
+		},
+		{
+			name: "not in month",
+			fields: fields{
+				startDate: time_one,
+			},
+			args: args{
+				time_three,
+			},
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
