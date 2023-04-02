@@ -76,12 +76,83 @@ func TestEvents_MakeICS(t *testing.T) {
 }
 
 func TestEvents_Months(t *testing.T) {
+	time_one, _ := time.Parse("2006-01-02T15:00", "2023-02-05T14:00")
+	month_one, _ := time.Parse("2006-01-02T15:00", "2023-02-01T00:00")
+	time_two, _ := time.Parse("2006-01-02T15:00", "2023-03-05T14:00")
+	month_two, _ := time.Parse("2006-01-02T15:00", "2023-03-01T00:00")
+	month_three, _ := time.Parse("2006-01-02T15:00", "2023-04-01T00:00")
+
 	tests := []struct {
 		name string
 		e    Events
 		want []time.Time
 	}{
-		// TODO: Add test cases.
+		{
+			name: "months1",
+			e: []Event{
+				{
+					startDate: time_one,
+					title:     "event 2/5/23 2pm",
+					endDate:   time_one.Add(48 * time.Hour),
+					location:  "loc of 2/5/23 2pm",
+				},
+				{
+					startDate: time_two,
+					title:     "event 2/5/23 2pm",
+					endDate:   time_two.Add(48 * time.Hour),
+					location:  "loc of 2/5/23 2pm",
+				},
+				{
+					startDate: time_one.Add(1 * time.Second),
+					title:     "event 2/5/23 2:00:01pm",
+					endDate:   time_one.Add(48 * time.Hour),
+					location:  "loc of 2/5/23 2:00:01pm",
+				},
+				{
+					startDate: time_one.Add(-48 * time.Hour),
+					title:     "event 2/5/21 2pm",
+					endDate:   time_one.Add(24 * time.Hour),
+					location:  "loc of 2/5/21 2pm",
+				},
+			},
+			want: []time.Time{
+				month_one,
+				month_two,
+			},
+		},
+		{
+			name: "months2",
+			e: []Event{
+				{
+					startDate: time_one,
+					title:     "event 2/5/23 2pm",
+					endDate:   time_one.Add(48 * time.Hour),
+					location:  "loc of 2/5/23 2pm",
+				},
+				{
+					startDate: time_two.Add(24 * 32 * time.Hour),
+					title:     "event 2/5/23 2pm",
+					endDate:   time_two.Add(25 * 32 * time.Hour),
+					location:  "loc of 2/5/23 2pm",
+				},
+				{
+					startDate: time_one.Add(1 * time.Second),
+					title:     "event 2/5/23 2:00:01pm",
+					endDate:   time_one.Add(48 * time.Hour),
+					location:  "loc of 2/5/23 2:00:01pm",
+				},
+				{
+					startDate: time_one.Add(-48 * time.Hour),
+					title:     "event 2/5/21 2pm",
+					endDate:   time_one.Add(24 * time.Hour),
+					location:  "loc of 2/5/21 2pm",
+				},
+			},
+			want: []time.Time{
+				month_one,
+				month_three,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
