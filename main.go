@@ -12,13 +12,13 @@ import (
 func main() {
 	// options:
 	//   -f <csv file of events>
-	//   -i [produce an ICS file with the same basename as the CSV file, or provide a new basename]
+	//   -i [dump an ICS file to stdout]
 	//   -p [produce a PDF file with the same basename as the CSV file, or provide a new basename]
 
 	fileName := flag.String("f", "", "name of CSV file to read; the format of the file is:\nstartDateAndTime,eventName,endDateAndTimeOrHourin24Hfmt,location")
 	printEvents := flag.Bool("P", false, "print out the parsed events")
-	makeIcs := flag.Bool("i", false, "make an ICS file")
-	makePdf := flag.Bool("p", false, "make an PDF file")
+	makeIcs := flag.Bool("i", false, "print out an ICS file")
+	makePdf := flag.Bool("p", false, "write out an PDF file")
 	flag.Parse()
 
 	if *fileName == "" {
