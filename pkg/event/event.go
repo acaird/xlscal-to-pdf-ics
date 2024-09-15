@@ -218,6 +218,31 @@ func (e Events) PdfCal(filename string) error {
 	return nil
 }
 
+func (e Events) Envelope(filename string) {
+	fontSizePoints := float64(7)
+	pdf := gofpdf.NewCustom(&gofpdf.InitType{
+		OrientationStr: gofpdf.OrientationPortrait,
+		UnitStr:        gofpdf.UnitMillimeter,
+		SizeStr:        gofpdf.PageSizeLetter,
+		Size:           gofpdf.SizeType{Wd: 105, Ht: 241},
+	})
+	pdf.AddPage()
+	pdf.SetFont("Arial", "", fontSizePoints)
+	_, mm := pdf.GetFontSize()
+	var textX, textY float64
+	textX = 10 // mm
+	textY = 30 // mm
+	textY = (241 - float64(len(e))*mm*1.5) / 3
+	for _, event := range e {
+		s := fmt.Sprintf("%s \t  %s @ %s\n", event.startDate.Format("2006-01-02 03:04PM"), event.title, event.location)
+		pdf.Text(textX, textY, s)
+		textY += mm * 1.5
+	}
+
+	filename = strings.TrimSuffix(filename, filepath.Ext(filename))
+	_ = pdf.OutputFileAndClose(filename + "-env" + ".pdf")
+}
+
 func (e Event) InMonth(month time.Time) bool {
 	return month.Month() == e.startDate.Month()
 }

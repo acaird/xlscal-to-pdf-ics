@@ -19,6 +19,7 @@ func main() {
 	printEvents := flag.Bool("P", false, "print out the parsed events")
 	makeIcs := flag.Bool("i", false, "print out an ICS file")
 	makePdf := flag.Bool("p", false, "write out an PDF file")
+	makeEnv := flag.Bool("e", false, "write something to be printed on an envelope")
 	flag.Parse()
 
 	if *fileName == "" {
@@ -56,5 +57,8 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+	}
+	if *makeEnv {
+		events.Envelope(*fileName)
 	}
 }
