@@ -83,7 +83,7 @@ func (e Events) MakeICS() string {
 	// MakeICS returns a string representation of an ICS file that
 	// can be imported into a calendar program
 	cal := ics.NewCalendar()
-	cal.SetMethod(ics.MethodAdd)
+	//cal.SetMethod(ics.MethodAdd) // setting this prevents Apple Calendar from importing the ics file
 	for _, evt := range e {
 		uuid := uuid.NewString()
 		event := cal.AddEvent(uuid)
