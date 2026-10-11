@@ -83,9 +83,9 @@ func (e Events) MakeICS() string {
 	// MakeICS returns a string representation of an ICS file that
 	// can be imported into a calendar program
 	cal := ics.NewCalendar()
-	cal.SetMethod(ics.MethodAdd)
+	// cal.SetMethod(ics.MethodAdd)
 	for _, evt := range e {
-		uuid := uuid.NewString()
+		uuid := uuid.New().String()
 		event := cal.AddEvent(uuid)
 		event.SetCreatedTime(time.Now())
 		event.SetDtStampTime(time.Now())
@@ -95,7 +95,7 @@ func (e Events) MakeICS() string {
 		event.SetSummary(evt.title)
 		event.SetLocation(evt.location)
 	}
-	return cal.Serialize()
+	return cal.Serialize(ics.WithNewLineUnix)
 }
 
 func (e Events) Months() []time.Time {

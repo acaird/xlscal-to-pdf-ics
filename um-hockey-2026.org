@@ -1,0 +1,20 @@
+| Date               | Opponent                               |   End | Location |
+|--------------------+----------------------------------------+-------+----------|
+| Oct 2, 2026 19:00  | UM Hockey vs Bowling Green             | 21:00 | Yost     |
+| Oct 9, 2026 19:00  | UM Hockey vs Alaska Anchorage          | 21:00 | Yost     |
+| Oct 10, 2026 19:00 | UM Hockey vs Alaska Anchorage          | 21:00 | Yost     |
+| Oct 23, 2026 19:00 | UM Hockey vs Western Michigan          | 21:00 | Yost     |
+| Nov 13, 2026 18:30 | UM Hockey vs Penn State (time TBA)     | 21:00 | Yost     |
+| Nov 14, 2026 18:30 | UM Hockey vs Penn State (time TBA)     | 21:00 | Yost     |
+| Nov 20, 2026 18:30 | UM Hockey vs Michigan State (time TBA) | 21:00 | Yost     |
+| Nov 27, 2026 19:00 | UM Hockey vs Ferris State              | 21:00 | Yost     |
+| Nov 28, 2026 19:00 | UM Hockey vs Ferris State              | 21:00 | Yost     |
+| Dec 4, 2026 18:30  | UM Hockey vs Wisconsin (time TBA)      | 21:00 | Yost     |
+| Dec 5, 2026 18:30  | UM Hockey vs Wisconsin (time TBA)      | 21:00 | Yost     |
+| Jan 22, 2027 18:30 | UM Hockey vs Ohio State (time TBA)     | 21:00 | Yost     |
+| Jan 23, 2027 18:30 | UM Hockey vs Ohio State (time TBA)     | 21:00 | Yost     |
+| Feb 6, 2027 18:30  | UM Hockey vs Michigan State (time TBA) | 21:00 | TBD      |
+| Feb 12, 2027 18:30 | UM Hockey vs Notre Dame (time TBA)     | 21:00 | Yost     |
+| Feb 13, 2027 18:30 | UM Hockey vs Notre Dame (time TBA)     | 21:00 | Yost     |
+| Feb 26, 2027 18:30 | UM Hockey vs Minnesota (time TBA)      | 21:00 | Yost     |
+| Feb 27, 2027 18:30 | UM Hockey vs Minnesota (time TBA)      | 21:00 | Yost     |
